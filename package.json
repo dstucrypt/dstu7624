@@ -1,6 +1,6 @@
 {
   "name": "dstu7624",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Kalyna (DSTU 7624:2014) block cipher in pure JS, ported from cryptonite",
   "main": "index.js",
   "scripts": {
