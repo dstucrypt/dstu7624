@@ -65,5 +65,26 @@ const ctCbc = hex('0ae0780c2eaf54065d181e5339fc94a50dbeca17069769e5c23cdc7bdad6a
   all &= check('CBC empty roundtrip', cbcDecrypt(keyCbc, ivCbc, cbcEncrypt(keyCbc, ivCbc, Buffer.alloc(0))), Buffer.alloc(0));
 }
 
+// ---- zip-lock: two key schedules interleaved must not leak into each other ----
+{
+  const rA = keySchedule(key256);   // key256's ECB vector is a known-good reference
+  const rB = keySchedule(keyCbc);
+  const msgs = [pt256, Buffer.alloc(32, 0x02), Buffer.alloc(32, 0x03)];
+
+  const soloA = msgs.map((m) => encryptBlock(rA, m));
+  const soloB = msgs.map((m) => encryptBlock(rB, m));
+  all &= check('zip-lock keyA vector', soloA[0], ct256); // wire to the known vector
+
+  const zipA = [], zipB = [];
+  for (let i = 0; i < msgs.length; i++) {
+    zipA.push(encryptBlock(rA, msgs[i]));
+    zipB.push(encryptBlock(rB, msgs[i]));
+  }
+  for (let i = 0; i < msgs.length; i++) {
+    all &= check(`zip-lock ECB keyA[${i}]`, zipA[i], soloA[i]);
+    all &= check(`zip-lock ECB keyB[${i}]`, zipB[i], soloB[i]);
+  }
+}
+
 console.log(all ? '\nALL PASS' : '\nSOME FAIL');
 process.exit(all ? 0 : 1);
